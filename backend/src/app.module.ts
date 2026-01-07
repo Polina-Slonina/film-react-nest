@@ -7,6 +7,10 @@ import { OrderModule } from './order/order.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import * as path from "node:path";
 import {configProvider, database} from "./app.config.provider";
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Film } from './films/entities/film.entity';
+import { Order } from './order/entities/order.entity';
+import { Schedule } from './films/entities/schedule.entity';
 
 @Module({
   imports: [
@@ -14,13 +18,23 @@ import {configProvider, database} from "./app.config.provider";
           isGlobal: true,
           cache: true
       }),
-  MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('DATABASE_URL', database.url),
-      }),
-      inject: [ConfigService],
+  TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: 'localhost',
+      port: 5432,
+      username: process.env.DATABASE_USERNAME || 'student',
+      password:  process.env.DATABASE_PASSWORD || 'polina',
+      database: 'afisha',
+      entities: [Film, Order, Schedule],
+      synchronize: true,
     }),
+  // MongooseModule.forRootAsync({
+  //     imports: [ConfigModule],
+  //     useFactory: async (configService: ConfigService) => ({
+  //       uri: configService.get<string>('DATABASE_URL', database.url),
+  //     }),
+  //     inject: [ConfigService],
+  //   }),
   ServeStaticModule.forRoot({
           rootPath: join(__dirname, '..', 'public/content/afisha'),
           serveRoot: '/content/afisha',

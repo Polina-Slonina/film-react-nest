@@ -37,7 +37,7 @@ export class FilmDto {
 
   @IsArray()
   @Type(() => ScheduleItemDto)
-  schedule?: ScheduleItemDto[];
+  schedule: ScheduleItemDto[];
 
 }
 
