@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { FilmRepository } from './repositories/film.repository';
-import { FilmDto, ScheduleItemDto, ScheduleResponseDto } from './dto/films.dto';
+import { FilmDto, ScheduleResponseDto } from './dto/films.dto';
 
 @Injectable()
 export class FilmsService {
   constructor(private readonly filmRepository: FilmRepository) {}
 
-  // Создание фильма
+  // // Создание фильма
   async create(createFilmDto: FilmDto) {
     return this.filmRepository.create(createFilmDto);
   }

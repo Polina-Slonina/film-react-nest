@@ -1,5 +1,5 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { OrderRepository } from './order.repository';
+import { OrderRepository } from './repository/order.repository';
 import { CreateOrderDto, OrderResponseDto } from './dto/order.dto';
 import { FilmRepository } from '../films/repositories/film.repository';
 
@@ -97,108 +97,90 @@ export class OrderService {
 
   // Откат бронирования
   private async releaseSeats(tickets: any[]): Promise<void> {
-    // Откат бронирования при ошибке
-    const seatsBySession = new Map<string, string[]>();
+  const seatsBySession = new Map<string, string[]>();
+  
+  for (const ticket of tickets) {
+    const key = `${ticket.film}:${ticket.session}`;
+    const seatKey = `${ticket.row}:${ticket.seat}`;
     
-    for (const ticket of tickets) {
-      const key = `${ticket.film}:${ticket.session}`;
-      const seatKey = `${ticket.row}:${ticket.seat}`;
-      
-      if (!seatsBySession.has(key)) {
-        seatsBySession.set(key, []);
-      }
-      seatsBySession.get(key)!.push(seatKey);
+    if (!seatsBySession.has(key)) {
+      seatsBySession.set(key, []);
     }
-    
-    for (const [key, seatKeys] of seatsBySession.entries()) {
-      const [filmId, sessionId] = key.split(':');
-      
-      await this.filmRepository.filmModel.findOneAndUpdate(
-        {
-          id: filmId,
-          'schedule.id': sessionId,
-        },
-        {
-          $pull: { 'schedule.$.taken': { $in: seatKeys } },
-        }
-      ).exec();
-    }
+    seatsBySession.get(key)!.push(seatKey);
   }
+  
+  for (const [key, seatKeys] of seatsBySession.entries()) {
+    const [filmId, sessionId] = key.split(':');
+    await this.filmRepository.releaseSeats(filmId, sessionId, seatKeys);
+  }
+}
 
   // Получение доступных мест
   async getAvailableSeats(id: string, sessionId: string) {
-    const film = await this.filmRepository.findById(id);
-    
-    if (!film) {
-      throw new NotFoundException(`Фильм с ID ${id} не найден`);
-    }
+  const film = await this.filmRepository.findById(id);
+  
+  if (!film) {
+    throw new NotFoundException(`Фильм с ID ${id} не найден`);
+  }
 
-    const scheduleItem = film.schedule?.find(item => item.id === sessionId);
+  const scheduleItem = film.schedule?.find(item => item.id === sessionId);
 
-    if (!scheduleItem) {
-      throw new NotFoundException(`Сеанс с ID ${sessionId} не найден`);
-    }
+  if (!scheduleItem) {
+    throw new NotFoundException(`Сеанс с ID ${sessionId} не найден`);
+  }
 
-    const totalSeats = scheduleItem.rows * scheduleItem.seats;
-    const takenSeats = scheduleItem.taken?.length || 0;
-    const availableSeats = totalSeats - takenSeats;
+  const totalSeats = scheduleItem.rows * scheduleItem.seats;
+  const takenSeats = scheduleItem.taken?.length || 0;
+  const availableSeats = totalSeats - takenSeats;
 
-    // Генерируем карту мест
-    const seatsMap = [];
-    for (let row = 1; row <= scheduleItem.rows; row++) {
-      const rowSeats = [];
-      for (let seat = 1; seat <= scheduleItem.seats; seat++) {
-        const seatKey = `${row}:${seat}`;
-        rowSeats.push({
-          seat,
-          available: !scheduleItem.taken?.includes(seatKey),
-        });
-      }
-      seatsMap.push({
-        row,
-        seats: rowSeats,
+  // Генерируем карту мест
+  const seatsMap = [];
+  for (let row = 1; row <= scheduleItem.rows; row++) {
+    const rowSeats = [];
+    for (let seat = 1; seat <= scheduleItem.seats; seat++) {
+      const seatKey = `${row}:${seat}`;
+      rowSeats.push({
+        seat,
+        available: !scheduleItem.taken?.includes(seatKey),
       });
     }
-
-    return {
-      id,
-      sessionId,
-      hall: scheduleItem.hall,
-      daytime: scheduleItem.daytime,
-      totalSeats,
-      takenSeats,
-      availableSeats,
-      price: scheduleItem.price,
-      seatsMap,
-    };
+    seatsMap.push({
+      row,
+      seats: rowSeats,
+    });
   }
+
+  return {
+    id,
+    sessionId,
+    hall: scheduleItem.hall,
+    daytime: scheduleItem.daytime,
+    totalSeats,
+    takenSeats,
+    availableSeats,
+    price: scheduleItem.price,
+    seatsMap,
+  };
+}
 
   // метод добавления мест в занятые
-  private async addSeatsToTaken(
-    id: string,
-    sessionId: string,
-    seats: Array<{row: number, seat: number}>,
-  ): Promise<void> {
-    const seatKeys = seats.map(seat => `${seat.row}:${seat.seat}`);
-    
-    const result = await this.filmRepository.filmModel.findOneAndUpdate(
-      {
-        id: id,
-        'schedule.id': sessionId,
-        'schedule.taken': { $not: { $elemMatch: { $in: seatKeys } } },
-      },
-      {
-        $addToSet: {
-          'schedule.$.taken': { $each: seatKeys },
-        },
-      },
-      { new: true },
-    ).exec();
-
-    if (!result) {
-      throw new ConflictException(
-        `Места уже заняты на сеансе ${sessionId}`
+    private async addSeatsToTaken(
+      filmId: string,
+      sessionId: string,
+      seats: Array<{row: number, seat: number}>,
+    ): Promise<void> {
+      const seatKeys = seats.map(seat => `${seat.row}:${seat.seat}`);
+      
+      const success = await this.filmRepository.addSeatsToTaken(
+        filmId,
+        sessionId,
+        seatKeys,
       );
+
+      if (!success) {
+        throw new ConflictException(
+          `Места уже заняты на сеансе ${sessionId}`
+        );
+      }
     }
-  }
 }
