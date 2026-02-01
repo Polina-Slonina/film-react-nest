@@ -10,7 +10,10 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "component": "sh ./bin/copy.sh Component src/components"
+    "component": "sh ./bin/copy.sh Component src/components",
+    "prebuild": "rm -rf node_modules/.cache && npm install rollup@3.29.4",
+    "docker:build": "docker build -t ghcr.io/your-username/film-backend:latest .",
+    "docker:push": "docker push ghcr.io/your-username/film-backend:latest"
   },
   "dependencies": {
     "clsx": "^2.1.1",

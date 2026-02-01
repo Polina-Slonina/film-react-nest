@@ -1,0 +1,15 @@
+FROM node:20 AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN echo "VITE_API_URL=/api/afisha" > .env && \
+    echo "VITE_CDN_URL=/content/afisha" >> .env
+
+RUN npm run build
+
+# Копируем файлы в volume
+CMD ["sh", "-c", "cp -r /app/dist/* /output/ && sleep infinity"]
