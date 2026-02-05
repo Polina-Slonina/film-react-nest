@@ -37,7 +37,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: ghcr.io/polina-slonina/cinema-backend:latest
+    image: ghcr.io/polina-slonina/cinema-backend:review-3
     container_name: cinema-backend
     environment:
       NODE_ENV: production
@@ -57,7 +57,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: ghcr.io/polina-slonina/cinema-frontend:latest
+    image: ghcr.io/polina-slonina/cinema-frontend:review-3
     container_name: cinema-frontend
     volumes:
       - frontend_dist:/output
@@ -70,7 +70,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    image: ghcr.io/polina-slonina/cinema-nginx:latest
+    image: ghcr.io/polina-slonina/cinema-nginx:review-3
     container_name: cinema-nginx
     ports:
       - "80:80"

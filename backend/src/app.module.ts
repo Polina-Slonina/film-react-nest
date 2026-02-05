@@ -26,7 +26,7 @@ import { Schedule } from './films/entities/schedule.entity';
       password:  process.env.DATABASE_PASSWORD || 'polina',
       database: 'afisha',
       entities: [Film, Order, Schedule],
-      synchronize: true,
+      synchronize: false,
     }),
   // MongooseModule.forRootAsync({
   //     imports: [ConfigModule],
