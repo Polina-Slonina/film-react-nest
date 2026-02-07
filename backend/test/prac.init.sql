@@ -1,7 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-create database prac
-    with owner prac;
+-- create database afisha
+    -- with owner student;
 
 create table public.films
 (
@@ -18,8 +18,8 @@ create table public.films
     description varchar                         not null
 );
 
-alter table public.films
-    owner to prac;
+-- alter table public.films
+    -- owner to prac;
 
 create table public.schedules
 (
@@ -37,5 +37,5 @@ create table public.schedules
             references public.films
 );
 
-alter table public.schedules
-    owner to prac;
+-- alter table public.schedules
+--     owner to prac;
