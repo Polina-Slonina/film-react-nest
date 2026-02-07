@@ -1,0 +1,37 @@
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+# Копируем ВСЕ файлы
+COPY . .
+
+# Создаем .env
+RUN echo "NODE_ENV=production" > .env && \
+    echo "PORT=3000" >> .env && \
+    echo "DATABASE_USERNAME=student" >> .env && \
+    echo "DATABASE_PASSWORD=polina" >> .env
+
+RUN npm run build
+
+FROM node:20-alpine
+
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Копируем собранный код
+COPY --from=builder /app/dist ./dist
+
+# Копируем папку public с картинками
+COPY --from=builder /app/public ./public
+
+COPY --from=builder /app/.env ./.env
+
+EXPOSE 3000
+
+CMD ["node", "dist/main.js"]

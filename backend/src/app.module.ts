@@ -20,13 +20,13 @@ import { Schedule } from './films/entities/schedule.entity';
       }),
   TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost',
+      host: 'postgres',
       port: 5432,
       username: process.env.DATABASE_USERNAME || 'student',
       password:  process.env.DATABASE_PASSWORD || 'polina',
       database: 'afisha',
       entities: [Film, Order, Schedule],
-      synchronize: true,
+      synchronize: false,
     }),
   // MongooseModule.forRootAsync({
   //     imports: [ConfigModule],

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15-alpine
+    container_name: cinema_postgres
+    environment:
+      POSTGRES_USER: student
+      POSTGRES_PASSWORD: polina
+      POSTGRES_DB: afisha
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cinema-network
+    restart: unless-stopped
+
+  # PgAdmin
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cinema-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: sloninapp@mail.ru
+      PGADMIN_DEFAULT_PASSWORD: polina
+    ports:
+      - "8080:80"
+    networks:
+      - cinema-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Бэкенд (Nest.js)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: ghcr.io/polina-slonina/cinema-backend:review-3
+    container_name: cinema-backend
+    environment:
+      NODE_ENV: production
+      DATABASE_USERNAME: student
+      DATABASE_PASSWORD: polina
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    networks:
+      - cinema-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  # Фронтенд (сборка)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ghcr.io/polina-slonina/cinema-frontend:review-3
+    container_name: cinema-frontend
+    volumes:
+      - frontend_dist:/output
+    networks:
+      - cinema-network
+    restart: "no"
+
+  # Nginx как реверс-прокси
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: ghcr.io/polina-slonina/cinema-nginx:review-3
+    container_name: cinema-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - frontend_dist:/usr/share/nginx/html
+      - ./backend/public:/usr/share/nginx/html/content
+    networks:
+      - cinema-network
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+  frontend_dist:
+
+networks:
+  cinema-network:
+    driver: bridge
